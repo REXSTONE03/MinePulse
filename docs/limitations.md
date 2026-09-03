@@ -59,8 +59,10 @@ Every forecast deviation that leads to either a stockout or severe overstocking 
 
 ---
 
-## 3. Modeling Limitations
+## 3. Modeling & Evaluation Limitations
 
-1. **Independent Failures Assumption**: Cascading wear is not modeled (e.g. an alternator failure leading to battery depletion).
-2. **Stationary Daily Usage**: The model assumes average operating hours per day remain stable. Sudden shifts in shift patterns or operating intensity will cause forecasting lags.
-3. **Deterministic Recommendation Lead Times**: The inventory optimization formula uses median lead times to calculate reorder points, even though the evaluation simulator models lead times as log-normal random variables.
+1. **Synthetic Dataset Disclaimer**: The dataset is synthetically generated for controlled development, testing, temporal-leakage verification, and methodology demonstration. Results on synthetic data must NOT be presented as proof of real-world mining site performance.
+2. **Weibull Baseline Comparison**: Out-of-sample backtesting demonstrated that while the Weibull competing-risks model captured 58.29% of failures at $P \ge 0.25$, it did NOT outperform the constant-hazard baseline on the overall Brier Score calibration metric (`0.1342` vs `0.0744`). This is due to heavy right-censoring caused by pre-emptive preventive maintenance replacements in the synthetic dataset. Further calibration and real-world site validation would be required prior to actual industrial deployment.
+3. **Independent Failures Assumption**: Cascading wear is not modeled (e.g. an alternator failure leading to battery depletion).
+4. **Stationary Daily Usage**: The model assumes average operating hours per day remain stable. Sudden shifts in shift patterns or operating intensity will cause forecasting lags.
+5. **Deterministic Recommendation Lead Times**: The inventory optimization formula uses median lead times to calculate reorder points, even though the evaluation simulator models lead times as log-normal random variables.
