@@ -282,11 +282,13 @@ All backend routes are prefixed with `/api` and exchange data in JSON format.
 
 ## 4. Staged Development Phases
 
-Instead of a 30-hour timeline, the project is structured into six academic evaluation phases:
+Development is structured into six evaluation phases:
 
-* **Phase 1: Architecture & Design Review**: Establish and lock down specifications, schema definitions, and API contracts. Ensure zero-data-leakage pipeline design.
-* **Phase 2: Database Schema & Causal Data Generation**: Create ORM models, spin up SQLite DB, and implement the deterministic, Weibull-driven synthetic generator with built-in scenario injects.
-* **Phase 3: Forecasting Models & ML Pipeline**: Build time-aware feature generation pipeline. Train failure classifier and design distribution selection module for demand prediction intervals.
-* **Phase 4: Downtime Simulation Engine**: Implement counterfactual event-driven simulator mapping mechanical, planned, and parts-constrained downtime.
-* **Phase 5: REST API & Integration Stubs**: Implement FastAPI gateway with Pydantic validation, model governance logs, and override endpoints.
-* **Phase 6: Frontend Interface & Verification**: Create the dashboard UI, integrate back-testing visualizations, run error diagnostics, and execute the test harness.
+* **Phase 1: Architecture & Design Review (Completed)**: Establish and lock down specifications, schema definitions, mathematical formulations, and API contracts.
+* **Phase 2: Database Schema & Causal Data Foundation (Completed)**: Create 12 ORM models, SQLite database, Weibull causal synthetic generator, and zero-leakage snapshot engine (`snapshot.py`).
+* **Phase 3 Task 1: Feature Engineering Layer (Completed)**: Build point-in-time feature extraction pipeline (`features.py`) generating 30+ features per active component with zero temporal leakage.
+* **Phase 3 Task 2: Failure-Risk Prediction Service (Completed)**: Fit Weibull MLE wearout parameters ($\beta, \eta$) and catastrophic shock rate ($\lambda_{\text{cat}}$) (`failure_risk.py`) for 7/30/60/90-day failure probabilities.
+* **Phase 3 Task 3: Parts-Demand Forecasting Service (Completed)**: Implement partitioned demand ($D_{\text{planned}} + D_{\text{failure}}$) (`demand_forecast.py`), Naive and Moving Average baselines, $P_{10}/P_{95}$ prediction quantiles, and out-of-sample temporal backtesting.
+* **Phase 4: Operational Decision Engine (Remaining — Unstarted)**: Counterfactual event-driven simulator mapping mechanical, planned, and inventory-constrained downtime, $Q^*$ cost optimization, and dispatcher overrides.
+* **Phase 5: REST API & Integration Stubs (Remaining — Unstarted)**: FastAPI gateway with Pydantic validation, model governance logs, and override endpoints.
+* **Phase 6: Frontend Interface & Verification (Remaining — Unstarted)**: React client interface, dashboard UI, back-testing visualizations, and error diagnostics.
