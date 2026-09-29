@@ -22,7 +22,7 @@ MinePulse AI introduces a zero-temporal-leakage predictive pipeline that:
 3. Fits Weibull competing-risks failure models to estimate 7, 30, 60, and 90-day component failure probabilities.
 4. Forecasts parts demand partitioned into planned maintenance demand ($D_{\text{planned}}$) and failure-driven probabilistic demand ($D_{\text{failure}}$) with prediction quantiles ($P_{10}, P_{95}$).
 5. Optimizes inventory reorder quantities ($Q^*$), safety stock, and action prioritization (`URGENT_REORDER`, `REORDER`, `MONITOR`, `NORMAL`).
-6. Exposes a production FastAPI REST API gateway (`/api/v1/`) with dispatcher override and audit trail capabilities.
+6. Exposes a FastAPI REST API gateway (`/api/v1/`) with dispatcher override and audit trail capabilities.
 7. Renders an interactive web-based dashboard UI for real-time operational decision support.
 
 ## 4. Current Project Status
@@ -44,19 +44,21 @@ MinePulse AI introduces a zero-temporal-leakage predictive pipeline that:
   3. Advanced model monitoring & automated retraining triggers — **5% overall**
 
 
-
 ## 5. Requirement Traceability Matrix
 
 | Capability | Implementation | Verification |
 |---|---|---|
-| Architecture | [`docs/architecture.md`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/docs/architecture.md) | Documentation review |
-| Database | [`backend/app/database/models.py`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/backend/app/database/models.py) | `test_data_foundation.py` |
-| Snapshot / Anti-Leakage | [`backend/app/services/snapshot.py`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/backend/app/services/snapshot.py) | `test_data_foundation.py` |
-| Feature Engineering | [`backend/app/services/features.py`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/backend/app/services/features.py) | `test_features.py` |
-| Failure Risk | [`backend/app/services/failure_risk.py`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/backend/app/services/failure_risk.py) | `test_failure_risk.py` |
-| Parts Demand | [`backend/app/services/demand_forecast.py`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/backend/app/services/demand_forecast.py) | `test_demand_forecast.py` |
-| Data Validation | [`scripts/validate_data.py`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/scripts/validate_data.py) | Validation result |
-| Backtesting | Phase 3 services / [`scripts/manual_verify_failure_risk.py`](file:///C:/Users/vpcga/Desktop/COE%20PROJECT/scripts/manual_verify_failure_risk.py) | Backtest outputs |
+| Architecture | [`docs/architecture.md`](docs/architecture.md) | Documentation review |
+| Database | [`backend/app/database/models.py`](backend/app/database/models.py) | `test_data_foundation.py` |
+| Snapshot / Anti-Leakage | [`backend/app/services/snapshot.py`](backend/app/services/snapshot.py) | `test_data_foundation.py` |
+| Feature Engineering | [`backend/app/services/features.py`](backend/app/services/features.py) | `test_features.py` |
+| Failure Risk | [`backend/app/services/failure_risk.py`](backend/app/services/failure_risk.py) | `test_failure_risk.py` |
+| Parts Demand | [`backend/app/services/demand_forecast.py`](backend/app/services/demand_forecast.py) | `test_demand_forecast.py` |
+| Decision Engine ($Q^*$) | [`backend/app/services/decision_engine.py`](backend/app/services/decision_engine.py) | `test_decision_engine.py` |
+| REST API Gateway | [`backend/app/main.py`](backend/app/main.py) | `test_api.py` |
+| Core Dashboard UI | [`frontend/index.html`](frontend/index.html) | API integration test |
+| Data Validation | [`scripts/validate_data.py`](scripts/validate_data.py) | Validation result |
+
 
 ---
 

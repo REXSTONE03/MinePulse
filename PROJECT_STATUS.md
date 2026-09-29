@@ -37,7 +37,8 @@ The codebase supports a complete, end-to-end predictive decision-support product
 4. **Failure-Risk Prediction**: Weibull MLE wearout fitting ($\beta, \eta$) + catastrophic shock rate ($\lambda_{\text{cat}}$) for conditional failure probabilities (7/30/60/90 days).
 5. **Parts-Demand Forecasting**: Partitioned demand ($D_{\text{planned}} + D_{\text{failure}}$), Naive/MA baselines, $P_{10}/P_{95}$ prediction quantiles, dispersion models (Poisson, Negative Binomial, Sparse Bootstrap).
 6. **Operational Decision Engine ($Q^*$)**: Deterministic inventory reorder calculation ($Q^*$), safety stock, projected shortage, action priority categorization (`URGENT_REORDER`, `REORDER`, `MONITOR`, `NORMAL`), vehicle maintenance scheduling, dispatcher override logic, and audit logging.
-7. **FastAPI Gateway**: Production REST API endpoints (`/api/v1/health`, `/api/v1/predict`, `/api/v1/forecast`, `/api/v1/recommendations`, `/api/v1/recommendations/{id}/override`, `/api/v1/audit`).
+7. **FastAPI Gateway**: REST API endpoints (`/api/v1/health`, `/api/v1/predict`, `/api/v1/forecast`, `/api/v1/recommendations`, `/api/v1/recommendations/{id}/override`, `/api/v1/audit`).
+
 8. **Operational Dashboard UI**: Single-page interactive web interface connected to live FastAPI endpoints with real-time override modal and KPI monitoring.
 
 ---
