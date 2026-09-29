@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MinePulse AI — Operational Decision Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-dark: #0a0e17;
+            --panel-bg: rgba(22, 28, 45, 0.75);
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --accent-cyan: #00f2fe;
+            --accent-blue: #4facfe;
+            --text-primary: #f0f4f8;
+            --text-secondary: #94a3b8;
+            --danger: #ff4b4b;
+            --warning: #ffb703;
+            --success: #00e676;
+            --info: #3a86ff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(0, 242, 254, 0.05) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(79, 172, 254, 0.05) 0%, transparent 40%);
+        }
+
+        /* Header */
+        header {
+            padding: 1.25rem 2rem;
+            background: rgba(10, 14, 23, 0.9);
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo i {
+            -webkit-text-fill-color: initial;
+            color: var(--accent-cyan);
+        }
+
+        .system-status {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(0, 230, 118, 0.1);
+            color: var(--success);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            border: 1px solid rgba(0, 230, 118, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--success);
+        }
+
+        /* Controls bar */
+        .controls-bar {
+            padding: 1rem 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            background: var(--panel-bg);
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .control-group label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        input[type="date"], select {
+            background: rgba(10, 14, 23, 0.8);
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan));
+            color: #000;
+            font-weight: 600;
+            padding: 0.55rem 1.25rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        /* Container */
+        .main-container {
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 1600px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .kpi-card {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 1.5rem;
+            border-radius: 12px;
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kpi-val {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-top: 0.25rem;
+        }
+
+        .kpi-icon {
+            font-size: 2.2rem;
+            opacity: 0.8;
+        }
+
+        /* Section Layout */
+        .grid-2col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .grid-2col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            backdrop-filter: blur(8px);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.25rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid var(--panel-border);
+        }
+
+        .panel-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 0.75rem 1rem;
+            color: var(--text-secondary);
+            border-bottom: 1px solid var(--panel-border);
+            font-weight: 500;
+        }
+
+        td {
+            padding: 0.85rem 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        /* Badges */
+        .badge {
+            padding: 0.25rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .badge-urgent, .badge-critical { background: rgba(255, 75, 75, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .badge-high { background: rgba(255, 183, 3, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+        .badge-medium { background: rgba(58, 134, 255, 0.2); color: var(--info); border: 1px solid var(--info); }
+        .badge-low, .badge-normal { background: rgba(0, 230, 118, 0.2); color: var(--success); border: 1px solid var(--success); }
+        .badge-overridden { background: rgba(148, 163, 184, 0.2); color: var(--text-secondary); border: 1px solid var(--text-secondary); }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #111827;
+            border: 1px solid var(--panel-border);
+            padding: 2rem;
+            border-radius: 12px;
+            width: 500px;
+            max-width: 90%;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--panel-border);
+            color: #fff;
+            padding: 0.6rem;
+            border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-bolt-lightning"></i>
+            MinePulse AI Decision Center
+        </div>
+        <div class="system-status">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                FastAPI Gateway Online (v1.0.0)
+            </div>
+        </div>
+    </header>
+
+    <div class="controls-bar">
+        <div class="control-group">
+            <label><i class="fa-regular fa-calendar"></i> Prediction Timestamp (T):</label>
+            <input type="date" id="predictionDate" value="2025-06-01">
+        </div>
+        <div class="control-group">
+            <label>Horizon:</label>
+            <select id="horizonSelect">
+                <option value="30" selected>30 Days</option>
+                <option value="7">7 Days</option>
+                <option value="60">60 Days</option>
+                <option value="90">90 Days</option>
+            </select>
+        </div>
+        <button class="btn" onclick="runFullPipeline()">
+            <i class="fa-solid fa-rotate"></i> Run Decision Engine
+        </button>
+    </div>
+
+    <div class="main-container">
+
+        <!-- KPI Summary Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Urgent Reorder Alerts</div>
+                    <div class="kpi-val" id="kpiUrgent" style="color: var(--danger);">0</div>
+                </div>
+                <div class="kpi-icon" style="color: var(--danger);"><i class="fa-solid fa-triangle-exclamation"></i></div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Critical Maintenance</div>
+                    <div class="kpi-val" id="kpiCriticalMaint" style="color: var(--warning);">0</div>
+                </div>
+                <div class="kpi-icon" style="color: var(--warning);"><i class="fa-solid fa-wrench"></i></div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">Total Parts Evaluated</div>
+                    <div class="kpi-val" id="kpiTotalParts" style="color: var(--accent-cyan);">0</div>
+                </div>
+                <div class="kpi-icon" style="color: var(--accent-cyan);"><i class="fa-solid fa-boxes-stacked"></i></div>
+            </div>
+            <div class="kpi-card">
+                <div>
+                    <div style="color: var(--text-secondary); font-size: 0.85rem;">System Model Governance</div>
+                    <div class="kpi-val" style="font-size: 1.2rem; color: var(--success); margin-top: 0.6rem;">Active (v1.0)</div>
+                </div>
+                <div class="kpi-icon" style="color: var(--success);"><i class="fa-solid fa-shield-halved"></i></div>
+            </div>
+        </div>
+
+        <!-- Inventory Reorder Recommendations Panel -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-title">
+                    <i class="fa-solid fa-cart-flatbed" style="color: var(--accent-cyan);"></i>
+                    Inventory & Parts Reorder Recommendations (Q* Optimization)
+                </div>
+            </div>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Part ID / Name</th>
+                            <th>Stock On Hand</th>
+                            <th>30d Expected Demand</th>
+                            <th>P95 Demand</th>
+                            <th>Shortage</th>
+                            <th>Lead Time</th>
+                            <th>Recommended Q*</th>
+                            <th>Action</th>
+                            <th>Override</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventoryTableBody">
+                        <tr><td colspan="9" style="text-align: center; color: var(--text-secondary);">Click 'Run Decision Engine' to fetch real-time recommendations.</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Maintenance & Risk Panel -->
+        <div class="grid-2col">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-truck-monster" style="color: var(--accent-blue);"></i>
+                        Vehicle Component Failure Risks & Maintenance
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Component</th>
+                                <th>Failure Risk</th>
+                                <th>PM Planned?</th>
+                                <th>Action</th>
+                                <th>Reason</th>
+                            </tr>
+                        </thead>
+                        <tbody id="maintenanceTableBody">
+                            <tr><td colspan="5" style="text-align: center; color: var(--text-secondary);">No data loaded.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Audit Log Panel -->
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <i class="fa-solid fa-list-check" style="color: var(--info);"></i>
+                        Dispatcher Override Audit Log
+                    </div>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Dispatcher</th>
+                                <th>Action</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTableBody">
+                            <tr><td colspan="4" style="text-align: center; color: var(--text-secondary);">No audit entries found.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Dispatcher Override Modal -->
+    <div class="modal" id="overrideModal">
+        <div class="modal-content">
+            <h3 style="margin-bottom: 1rem; color: var(--accent-cyan);">Apply Dispatcher Override</h3>
+            <div class="form-group">
+                <label>Recommendation ID:</label>
+                <input type="text" id="modalRecId" readonly>
+            </div>
+            <div class="form-group">
+                <label>Dispatcher Name:</label>
+                <input type="text" id="modalDispatcher" value="Lead_Dispatcher_Alpha">
+            </div>
+            <div class="form-group">
+                <label>New Decision:</label>
+                <select id="modalDecision">
+                    <option value="MONITOR">MONITOR (Defer Order)</option>
+                    <option value="ORDER NOW">ORDER NOW (Force Order)</option>
+                    <option value="NORMAL">NORMAL (No Action)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Override Quantity:</label>
+                <input type="number" id="modalQty" value="0">
+            </div>
+            <div class="form-group">
+                <label>Override Rationale / Reason:</label>
+                <textarea id="modalReason" rows="3" placeholder="Provide operational context for override..."></textarea>
+            </div>
+            <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                <button class="btn" style="background: var(--panel-border); color: #fff;" onclick="closeModal()">Cancel</button>
+                <button class="btn" onclick="submitOverride()">Submit Override</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = "/api/v1";
+
+        async function runFullPipeline() {
+            const date = document.getElementById("predictionDate").value;
+            const horizon = parseInt(document.getElementById("horizonSelect").value);
+
+            try {
+                const res = await fetch(`${API_BASE}/recommendations`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prediction_timestamp: date, horizon_days: horizon })
+                });
+                const data = await res.json();
+
+                // Update KPIs
+                document.getElementById("kpiUrgent").innerText = data.summary.urgent_reorders;
+                document.getElementById("kpiCriticalMaint").innerText = data.summary.critical_maintenance_components;
+                document.getElementById("kpiTotalParts").innerText = data.summary.total_parts_analyzed;
+
+                // Render Inventory Table
+                renderInventoryTable(data.inventory_recommendations);
+                // Render Maintenance Table
+                renderMaintenanceTable(data.maintenance_recommendations);
+                // Render Audit Log
+                loadAuditLog();
+
+            } catch (err) {
+                alert("Error connecting to FastAPI backend: " + err);
+            }
+        }
+
+        function renderInventoryTable(items) {
+            const tbody = document.getElementById("inventoryTableBody");
+            tbody.innerHTML = "";
+            items.forEach(item => {
+                const tr = document.createElement("tr");
+                const badgeClass = `badge-${item.priority.toLowerCase()}`;
+                tr.innerHTML = `
+                    <td><strong>${item.part_name}</strong><br><small style="color:var(--text-secondary)">${item.part_number}</small></td>
+                    <td>${item.stock_on_hand}</td>
+                    <td>${item.expected_demand}</td>
+                    <td>${item.p95_demand}</td>
+                    <td style="color: ${item.projected_shortage > 0 ? 'var(--danger)' : 'var(--success)'}">${item.projected_shortage}</td>
+                    <td>${item.lead_time_days} days</td>
+                    <td><strong>${item.recommended_order_qty}</strong></td>
+                    <td><span class="badge ${badgeClass}">${item.action_required}</span></td>
+                    <td>
+                        ${item.status === 'OVERRIDDEN' ? 
+                            '<span class="badge badge-overridden">OVERRIDDEN</span>' : 
+                            `<button class="btn" style="padding: 0.3rem 0.6rem; font-size: 0.75rem;" onclick="openOverrideModal(${item.recommendation_id}, ${item.recommended_order_qty})">Override</button>`
+                        }
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderMaintenanceTable(items) {
+            const tbody = document.getElementById("maintenanceTableBody");
+            tbody.innerHTML = "";
+            items.forEach(item => {
+                const tr = document.createElement("tr");
+                const badgeClass = `badge-${item.priority.toLowerCase()}`;
+                tr.innerHTML = `
+                    <td>Comp #${item.component_id} (${item.component_type})</td>
+                    <td><strong>${(item.failure_probability * 100).toFixed(1)}%</strong></td>
+                    <td>${item.has_planned_pm ? '<span style="color:var(--success)">Yes (' + item.scheduled_pm_date + ')</span>' : '<span style="color:var(--danger)">No</span>'}</td>
+                    <td><span class="badge ${badgeClass}">${item.action}</span></td>
+                    <td style="font-size:0.8rem; color:var(--text-secondary)">${item.reason}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function loadAuditLog() {
+            try {
+                const res = await fetch(`${API_BASE}/audit`);
+                const logs = await res.json();
+                const tbody = document.getElementById("auditTableBody");
+                tbody.innerHTML = "";
+                logs.forEach(log => {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `
+                        <td style="font-size:0.8rem">${log.timestamp}</td>
+                        <td>${log.user}</td>
+                        <td><span class="badge badge-medium">${log.action}</span></td>
+                        <td style="font-size:0.8rem">${JSON.stringify(log.details)}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch(e) {}
+        }
+
+        function openOverrideModal(recId, currentQty) {
+            document.getElementById("modalRecId").value = recId;
+            document.getElementById("modalQty").value = currentQty;
+            document.getElementById("overrideModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("overrideModal").style.display = "none";
+        }
+
+        async function submitOverride() {
+            const recId = document.getElementById("modalRecId").value;
+            const dispatcher = document.getElementById("modalDispatcher").value;
+            const decision = document.getElementById("modalDecision").value;
+            const qty = parseInt(document.getElementById("modalQty").value);
+            const reason = document.getElementById("modalReason").value;
+
+            if (!reason) {
+                alert("Please provide a reason for the override.");
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_BASE}/recommendations/${recId}/override`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        dispatcher_name: dispatcher,
+                        new_decision: decision,
+                        override_qty: qty,
+                        reason: reason
+                    })
+                });
+                if (res.ok) {
+                    closeModal();
+                    runFullPipeline();
+                } else {
+                    const err = await res.json();
+                    alert("Error: " + err.detail);
+                }
+            } catch(e) {
+                alert("Failed to submit override: " + e);
+            }
+        }
+
+        // Auto initialize dashboard on load
+        window.onload = runFullPipeline;
+    </script>
+</body>
+</html>

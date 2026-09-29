@@ -3,7 +3,7 @@
 > [!IMPORTANT]
 > **Synthetic Dataset & Evaluation Scope Disclaimer**
 > This dataset is synthetically generated for controlled development, testing, temporal-leakage verification, and methodology demonstration. Performance on synthetic data must NOT be presented as proof of real-world mining site performance.
-> **Current Status**: Phase 1–3 are complete for the current 35% milestone. Phase 4–6 remain under development.
+> **Current Status**: Phase 1–5 are 100% complete and Phase 6 core dashboard is implemented for the **75% Project Completion Milestone**.
 
 MinePulse AI is an operational decision-support system designed to reduce vehicle downtime in mining operations caused by unavailable parts. It connects vehicle telematics, scheduled maintenance plans, historical component failures, parts usage history, and supplier lead times to predict component failure risks and parts demand under statistical uncertainty.
 
@@ -21,11 +21,13 @@ MinePulse AI introduces a zero-temporal-leakage predictive pipeline that:
 2. Extracts 30+ component, telemetry, maintenance, failure, and inventory features.
 3. Fits Weibull competing-risks failure models to estimate 7, 30, 60, and 90-day component failure probabilities.
 4. Forecasts parts demand partitioned into planned maintenance demand ($D_{\text{planned}}$) and failure-driven probabilistic demand ($D_{\text{failure}}$) with prediction quantiles ($P_{10}, P_{95}$).
-5. Evaluates model accuracy using out-of-sample temporal backtesting.
+5. Optimizes inventory reorder quantities ($Q^*$), safety stock, and action prioritization (`URGENT_REORDER`, `REORDER`, `MONITOR`, `NORMAL`).
+6. Exposes a production FastAPI REST API gateway (`/api/v1/`) with dispatcher override and audit trail capabilities.
+7. Renders an interactive web-based dashboard UI for real-time operational decision support.
 
 ## 4. Current Project Status
-**Milestone**: 35% Project Completion Review  
-**Status**: Phase 1–3 are complete for the current 35% milestone. Phase 4–6 remain under development.
+**Milestone**: 75% Real Implementation Completion Review  
+**Status**: Phases 1 through 5 are 100% COMPLETE. Phase 6 Core Dashboard UI is IMPLEMENTED. All 53 unit/integration tests pass.
 
 * **Completed**:
   * Phase 1 — Architecture & Requirements
@@ -33,10 +35,10 @@ MinePulse AI introduces a zero-temporal-leakage predictive pipeline that:
   * Phase 3.1 — Feature Engineering Layer
   * Phase 3.2 — Failure-Risk Prediction Service
   * Phase 3.3 — Parts-Demand Forecasting Service
-* **Remaining (Unstarted)**:
-  * Phase 4 — Operational Decision Engine (Inventory Optimization $Q^*$)
+  * Phase 4 — Operational Decision Engine (Inventory Optimization $Q^*$ & Overrides)
   * Phase 5 — FastAPI REST API Gateway
-  * Phase 6 — React Web Interface Dashboard
+  * Phase 6 — Core React / HTML Operational Dashboard UI
+
 
 ## 5. Requirement Traceability Matrix
 

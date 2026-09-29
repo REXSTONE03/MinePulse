@@ -311,6 +311,20 @@ def generate_demand_forecast(
         forecasts=forecasts
     )
 
+def forecast_parts_demand(db: Session, prediction_timestamp: str, horizon_days: int = 30) -> dict:
+    """
+    Convenience wrapper returning dictionary structure for parts demand forecast for a specified horizon.
+    """
+    report = generate_demand_forecast(db, prediction_timestamp, horizons=[horizon_days])
+    target_fc = [f.to_dict() for f in report.forecasts if f.horizon_days == horizon_days]
+    return {
+        "prediction_timestamp": prediction_timestamp,
+        "horizon_days": horizon_days,
+        "total_parts_evaluated": report.part_count,
+        "forecasts": target_fc
+    }
+
+
 def evaluate_demand_forecast_backtest(
     db: Session,
     test_start_timestamp: str,
