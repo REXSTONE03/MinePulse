@@ -57,7 +57,12 @@ MinePulse AI introduces a zero-temporal-leakage predictive pipeline that:
 | Decision Engine ($Q^*$) | [`backend/app/services/decision_engine.py`](backend/app/services/decision_engine.py) | `test_decision_engine.py` |
 | REST API Gateway | [`backend/app/main.py`](backend/app/main.py) | `test_api.py` |
 | Core Dashboard UI | [`frontend/index.html`](frontend/index.html) | API integration test |
-| Data Validation | [`scripts/validate_data.py`](scripts/validate_data.py) | Validation result |
+| Data Validation | [`scripts/validate_data.py`](scripts/validate_data.py) | `validate_data.py` execution |
+| Stakeholder Validation | [`docs/validation.md`](docs/validation.md) | Persona scenario walkthrough |
+| Experiment & Results | [`results/experiment_results.md`](results/experiment_results.md) | Empirical evaluation report |
+| Automated CI Pipeline | [`.github/workflows/tests.yml`](.github/workflows/tests.yml) | GitHub Actions CI run |
+| Project Licensing | [`LICENSE`](LICENSE) | MIT Open Source License |
+
 
 
 ---

@@ -41,9 +41,16 @@ The codebase supports a complete, end-to-end predictive decision-support product
 
 8. **Operational Dashboard UI**: Single-page interactive web interface connected to live FastAPI endpoints with real-time override modal and KPI monitoring.
 
+### Review-2 Verification Artifacts:
+- **Stakeholder Acceptance Walkthrough**: [`docs/validation.md`](docs/validation.md)
+- **Empirical Experiment & Results Report**: [`results/experiment_results.md`](results/experiment_results.md)
+- **Automated CI Workflow**: [`.github/workflows/tests.yml`](.github/workflows/tests.yml)
+- **Project License**: [`LICENSE`](LICENSE) (MIT License)
+
 ---
 
 ## Automated Test Results
+
 
 - **Total Test Cases**: **53 / 53 PASSED** (`python -m pytest`)
   - `test_api.py`: 8 PASSED
