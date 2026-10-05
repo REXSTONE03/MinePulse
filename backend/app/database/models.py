@@ -352,3 +352,20 @@ class ExperimentRegistry(Base):
     __table_args__ = (
         Index('idx_experiment_seed', 'random_seed'),
     )
+
+class User(Base):
+    __tablename__ = 'users'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    username = Column(String, unique=True, nullable=False)
+    email = Column(String, unique=True, nullable=True)
+    hashed_password = Column(String, nullable=False)
+    role = Column(String, default='VIEWER', nullable=False) # ADMIN, MAINTENANCE_PLANNER, DISPATCHER, VIEWER
+    is_active = Column(Boolean, default=True, nullable=False)
+    created_at = Column(String, nullable=False) # ISO8601
+    
+    __table_args__ = (
+        CheckConstraint(role.in_(['ADMIN', 'MAINTENANCE_PLANNER', 'DISPATCHER', 'VIEWER']), name='check_user_role'),
+        Index('idx_users_username', 'username'),
+    )
+

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: minepulse-config
+  namespace: minepulse
+data:
+  POSTGRES_DB: "minepulse_db"
+  POSTGRES_HOST: "postgres-service"
+  POSTGRES_PORT: "5432"
+  CORS_ORIGINS: "http://minepulse.local,http://localhost:3000"
+  JWT_ACCESS_TOKEN_EXPIRE_MINUTES: "60"

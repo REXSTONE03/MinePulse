@@ -1,5 +1,25 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Dict
+
+# Auth & User Schemas
+class LoginRequest(BaseModel):
+    username: str = Field(..., json_schema_extra={"example": "admin"})
+    password: str = Field(..., json_schema_extra={"example": "admin123"})
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+    role: str
+    expires_in_minutes: int
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: Optional[str] = None
+    role: str
+    is_active: bool
+    created_at: str
 
 # Health Schema
 class HealthResponse(BaseModel):
@@ -10,8 +30,8 @@ class HealthResponse(BaseModel):
 
 # Prediction Schema
 class PredictRequest(BaseModel):
-    prediction_timestamp: str = Field(..., example="2025-06-01")
-    horizon_days: int = Field(30, example=30)
+    prediction_timestamp: str = Field(..., json_schema_extra={"example": "2025-06-01"})
+    horizon_days: int = Field(30, json_schema_extra={"example": 30})
 
 class ComponentPredictionItem(BaseModel):
     component_id: int
@@ -38,8 +58,8 @@ class PredictResponse(BaseModel):
 
 # Forecast Schema
 class ForecastRequest(BaseModel):
-    prediction_timestamp: str = Field(..., example="2025-06-01")
-    horizon_days: int = Field(30, example=30)
+    prediction_timestamp: str = Field(..., json_schema_extra={"example": "2025-06-01"})
+    horizon_days: int = Field(30, json_schema_extra={"example": 30})
 
 class PartForecastItem(BaseModel):
     part_id: int
@@ -61,8 +81,8 @@ class ForecastResponse(BaseModel):
 
 # Recommendation Schema
 class RecommendationRequest(BaseModel):
-    prediction_timestamp: str = Field(..., example="2025-06-01")
-    horizon_days: int = Field(30, example=30)
+    prediction_timestamp: str = Field(..., json_schema_extra={"example": "2025-06-01"})
+    horizon_days: int = Field(30, json_schema_extra={"example": 30})
 
 class InventoryRecommendationItem(BaseModel):
     recommendation_id: Optional[int] = None
@@ -118,11 +138,11 @@ class RecommendationResponse(BaseModel):
 
 # Dispatcher Override Schema
 class OverrideRequest(BaseModel):
-    dispatcher_name: str = Field(..., example="Dispatcher_John_Smith")
-    new_decision: str = Field(..., example="MONITOR")
-    override_qty: int = Field(0, example=0)
-    reason: str = Field(..., example="Urgent shipment scheduled from alternative warehouse")
-    timestamp: Optional[str] = Field(None, example="2025-06-01T12:00:00")
+    dispatcher_name: str = Field(..., json_schema_extra={"example": "Dispatcher_John_Smith"})
+    new_decision: str = Field(..., json_schema_extra={"example": "MONITOR"})
+    override_qty: int = Field(0, json_schema_extra={"example": 0})
+    reason: str = Field(..., json_schema_extra={"example": "Urgent shipment scheduled from alternative warehouse"})
+    timestamp: Optional[str] = Field(None, json_schema_extra={"example": "2025-06-01T12:00:00"})
 
 class OverrideResponse(BaseModel):
     status: str
@@ -137,3 +157,13 @@ class AuditLogItem(BaseModel):
     user: str
     action: str
     details: dict
+
+# Monitoring Schemas
+class RetrainTriggerRequest(BaseModel):
+    force: bool = Field(False, json_schema_extra={"example": False})
+
+class RetrainTriggerResponse(BaseModel):
+    status: str
+    message: str
+    event_details: Optional[dict] = None
+    current_psi: Optional[float] = None

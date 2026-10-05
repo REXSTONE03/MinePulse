@@ -10,24 +10,38 @@ DEFAULT_DB_PATH = os.path.abspath(
     )
 )
 
-# Ensure data directory exists
+# Ensure data directory exists if default sqlite is used
 os.makedirs(os.path.dirname(DEFAULT_DB_PATH), exist_ok=True)
 
-DATABASE_URL = f"sqlite:///{DEFAULT_DB_PATH}"
+# Fetch Database URL from Environment Variable (Fallback to SQLite)
+DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
 
-engine = create_engine(
-    DATABASE_URL, 
-    connect_args={"timeout": 30}  # 30-second timeout to handle locked databases
-)
+# Handle postgresql:// -> postgresql+psycopg2:// if required by SQLAlchemy 2.0
+if DATABASE_URL.startswith("postgresql://"):
+    DATABASE_URL = DATABASE_URL.replace("postgresql://", "postgresql+psycopg2://", 1)
 
-# Enable SQLite foreign key constraints and WAL mode at connection check-in/creation
-@event.listens_for(engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    cursor = dbapi_connection.cursor()
-    cursor.execute("PRAGMA foreign_keys=ON")
-    cursor.execute("PRAGMA journal_mode=WAL")
-    cursor.execute("PRAGMA synchronous=NORMAL")
-    cursor.close()
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL, 
+        connect_args={"timeout": 30}  # 30-second timeout to handle locked databases
+    )
+
+    # Enable SQLite foreign key constraints and WAL mode at connection check-in/creation
+    @event.listens_for(engine, "connect")
+    def set_sqlite_pragma(dbapi_connection, connection_record):
+        cursor = dbapi_connection.cursor()
+        cursor.execute("PRAGMA foreign_keys=ON")
+        cursor.execute("PRAGMA journal_mode=WAL")
+        cursor.execute("PRAGMA synchronous=NORMAL")
+        cursor.close()
+else:
+    # PostgreSQL configuration
+    engine = create_engine(
+        DATABASE_URL,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20
+    )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: minepulse
+  labels:
+    app.kubernetes.io/name: minepulse
+    app.kubernetes.io/part-of: minepulse-ai-platform

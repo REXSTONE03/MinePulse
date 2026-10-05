@@ -1,22 +1,27 @@
 from fastapi import FastAPI, Depends, HTTPException, status, Query
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import text
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Optional
 import os
 
 from backend.app.database.session import get_db, engine
-from backend.app.database.models import Base
+from backend.app.database.models import Base, User
+from backend.app.auth import (
+    hash_password, verify_password, create_access_token,
+    get_current_user, RequireRole, seed_default_users, ACCESS_TOKEN_EXPIRE_MINUTES
+)
 from backend.app.schemas import (
-    HealthResponse,
+    HealthResponse, LoginRequest, TokenResponse, UserResponse,
     PredictRequest, PredictResponse,
     ForecastRequest, ForecastResponse,
     RecommendationRequest, RecommendationResponse,
     OverrideRequest, OverrideResponse,
-    AuditLogItem
+    AuditLogItem, RetrainTriggerRequest, RetrainTriggerResponse
 )
 from backend.app.services.failure_risk import predict_component_failure_risk
 from backend.app.services.demand_forecast import forecast_parts_demand
@@ -26,9 +31,18 @@ from backend.app.services.decision_engine import (
     get_recommendations_list,
     get_audit_trail
 )
+from backend.app.services.monitoring import (
+    get_monitoring_summary,
+    evaluate_feature_drift,
+    trigger_automated_retraining
+)
 
-# Initialize database tables on startup if needed
+# Initialize database tables on startup
 Base.metadata.create_all(bind=engine)
+
+# Seed default demo users for RBAC
+with next(get_db()) as db_session:
+    seed_default_users(db_session)
 
 app = FastAPI(
     title="MinePulse AI REST API Gateway",
@@ -36,12 +50,15 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Enable CORS for React Frontend Integration
+# Configurable Security-Hardened CORS Middleware
+raw_cors = os.getenv("CORS_ORIGINS", "http://localhost:3000,http://localhost:5173,http://127.0.0.1:8000,http://localhost:8000")
+allowed_origins = [origin.strip() for origin in raw_cors.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
@@ -52,6 +69,10 @@ if os.path.exists(FRONTEND_DIR):
 @app.get("/", include_in_schema=False)
 @app.get("/dashboard", include_in_schema=False)
 def serve_dashboard():
+    # If React build dist/index.html exists, serve it; otherwise serve single-page UI
+    react_dist = os.path.join(FRONTEND_DIR, "dist", "index.html")
+    if os.path.exists(react_dist):
+        return FileResponse(react_dist)
     index_path = os.path.join(FRONTEND_DIR, "index.html")
     if os.path.exists(index_path):
         return FileResponse(index_path)
@@ -60,10 +81,9 @@ def serve_dashboard():
 @app.get("/api/v1/health", response_model=HealthResponse, tags=["Health"])
 def health_check(db: Session = Depends(get_db)):
     """
-    System Health and Readiness endpoint.
+    Public System Health and Readiness endpoint.
     """
     try:
-        # Check DB connectivity
         db.execute(text("SELECT 1"))
         db_status = "HEALTHY"
     except Exception as e:
@@ -76,11 +96,65 @@ def health_check(db: Session = Depends(get_db)):
         "service_status": "OPERATIONAL"
     }
 
+# -------------------------------------------------------------------------
+# AUTHENTICATION ENDPOINTS (OAuth2 / JWT)
+# -------------------------------------------------------------------------
+
+@app.post("/api/v1/auth/login", response_model=TokenResponse, tags=["Authentication"])
+def login_json(req: LoginRequest, db: Session = Depends(get_db)):
+    """
+    JSON Login endpoint returning a signed OAuth2 JWT Bearer access token.
+    """
+    seed_default_users(db)
+    user = db.query(User).filter(User.username == req.username).first()
+    if not user or not verify_password(req.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    if not user.is_active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user account.")
+
+    access_token = create_access_token(data={"sub": user.username, "role": user.role})
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": user.username,
+        "role": user.role,
+        "expires_in_minutes": ACCESS_TOKEN_EXPIRE_MINUTES
+    }
+
+@app.post("/api/v1/auth/token", response_model=TokenResponse, tags=["Authentication"])
+def login_form(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+    """
+    Standard OAuth2 Form Login endpoint compatible with Swagger UI auth flow.
+    """
+    return login_json(LoginRequest(username=form_data.username, password=form_data.password), db)
+
+@app.get("/api/v1/auth/me", response_model=UserResponse, tags=["Authentication"])
+def get_current_user_profile(current_user: User = Depends(get_current_user)):
+    """
+    Returns profile information of the currently authenticated user.
+    """
+    return {
+        "id": current_user.id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "role": current_user.role,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at
+    }
+
+# -------------------------------------------------------------------------
+# PREDICTIVE ANALYTICS & DECISION SERVICES (Protected by Auth & RBAC)
+# -------------------------------------------------------------------------
 
 @app.post("/api/v1/predict", response_model=PredictResponse, tags=["Failure Risk"])
-def predict_failure_risk(req: PredictRequest, db: Session = Depends(get_db)):
+def predict_failure_risk(req: PredictRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
-    Predicts Weibull MLE wearout + catastrophic shock failure risks across component fleet for a given prediction timestamp T.
+    Predicts Weibull MLE wearout + catastrophic shock failure risks across component fleet for prediction timestamp T.
     """
     try:
         res = predict_component_failure_risk(db, req.prediction_timestamp)
@@ -116,9 +190,8 @@ def predict_failure_risk(req: PredictRequest, db: Session = Depends(get_db)):
             detail=f"Error executing failure risk prediction: {str(e)}"
         )
 
-
 @app.post("/api/v1/forecast", response_model=ForecastResponse, tags=["Demand Forecast"])
-def forecast_demand(req: ForecastRequest, db: Session = Depends(get_db)):
+def forecast_demand(req: ForecastRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Forecasts partitioned parts demand (Planned PM + Failure-Driven) with P10/P95 prediction quantiles.
     """
@@ -151,9 +224,8 @@ def forecast_demand(req: ForecastRequest, db: Session = Depends(get_db)):
             detail=f"Error executing parts demand forecasting: {str(e)}"
         )
 
-
 @app.post("/api/v1/recommendations", response_model=RecommendationResponse, tags=["Decision Engine"])
-def generate_recommendations(req: RecommendationRequest, db: Session = Depends(get_db)):
+def generate_recommendations(req: RecommendationRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     """
     Generates unified operational inventory reorder & vehicle maintenance recommendations.
     """
@@ -170,7 +242,8 @@ def generate_recommendations(req: RecommendationRequest, db: Session = Depends(g
 def list_recommendations(
     status_filter: Optional[str] = Query(None, description="Filter by status: PENDING, APPROVED, OVERRIDDEN"),
     part_id: Optional[int] = Query(None, description="Filter by part ID"),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Retrieves stored recommendations from the database.
@@ -187,17 +260,19 @@ def list_recommendations(
 def override_recommendation(
     recommendation_id: int,
     req: OverrideRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RequireRole(["ADMIN", "DISPATCHER"]))
 ):
     """
     Records a human dispatcher override for an automated recommendation with complete audit trail.
+    Requires DISPATCHER or ADMIN role.
     """
-    ts = req.timestamp or datetime.now().isoformat()
+    ts = req.timestamp or datetime.utcnow().isoformat()
     try:
         res = apply_dispatcher_override(
             db=db,
             recommendation_id=recommendation_id,
-            dispatcher_name=req.dispatcher_name,
+            dispatcher_name=req.dispatcher_name or current_user.username,
             new_decision=req.new_decision,
             override_qty=req.override_qty,
             reason=req.reason,
@@ -205,10 +280,7 @@ def override_recommendation(
         )
         return res
     except ValueError as ve:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(ve)
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(ve))
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -216,9 +288,13 @@ def override_recommendation(
         )
 
 @app.get("/api/v1/audit", response_model=List[AuditLogItem], tags=["Audit Log"])
-def get_system_audit_log(limit: int = Query(50, ge=1, le=500), db: Session = Depends(get_db)):
+def get_system_audit_log(
+    limit: int = Query(50, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RequireRole(["ADMIN", "DISPATCHER", "MAINTENANCE_PLANNER"]))
+):
     """
-    Retrieves system audit log entries.
+    Retrieves system audit log entries. Requires DISPATCHER, MAINTENANCE_PLANNER, or ADMIN role.
     """
     try:
         return get_audit_trail(db, limit=limit)
@@ -226,4 +302,61 @@ def get_system_audit_log(limit: int = Query(50, ge=1, le=500), db: Session = Dep
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Error retrieving audit log: {str(e)}"
+        )
+
+# -------------------------------------------------------------------------
+# MODEL MONITORING & AUTOMATED RETRAINING (Phase G & H)
+# -------------------------------------------------------------------------
+
+@app.get("/api/v1/monitoring/summary", tags=["Model Governance & Monitoring"])
+def get_monitoring_report(
+    prediction_timestamp: str = Query("2025-06-01", description="Prediction timestamp T"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Returns unified model monitoring summary covering failure risk, demand accuracy, PSI data drift, and retraining status.
+    """
+    try:
+        return get_monitoring_summary(db, prediction_timestamp=prediction_timestamp)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error generating monitoring summary: {str(e)}"
+        )
+
+@app.get("/api/v1/monitoring/drift", tags=["Model Governance & Monitoring"])
+def get_data_drift_report(
+    prediction_timestamp: str = Query("2025-06-01", description="Prediction timestamp T"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Evaluates Population Stability Index (PSI) feature drift between historical reference telemetry and current inference data.
+    """
+    try:
+        return evaluate_feature_drift(db, prediction_timestamp=prediction_timestamp)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error evaluating feature drift: {str(e)}"
+        )
+
+@app.post("/api/v1/monitoring/trigger-retrain", response_model=RetrainTriggerResponse, tags=["Model Governance & Monitoring"])
+def trigger_retraining_endpoint(
+    req: RetrainTriggerRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(RequireRole(["ADMIN", "MAINTENANCE_PLANNER"]))
+):
+    """
+    Evaluates retraining conditions (PSI >= 0.25) and emits a RETRAINING_TRIGGERED audit event.
+    Requires ADMIN or MAINTENANCE_PLANNER role.
+    """
+    try:
+        res = trigger_automated_retraining(db, user=current_user.username, force=req.force)
+        return res
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error triggering automated retraining: {str(e)}"
         )
